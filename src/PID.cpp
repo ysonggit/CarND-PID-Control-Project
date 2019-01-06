@@ -19,9 +19,10 @@ void PID::Init(double Kp, double Ki, double Kd) {
 }
 
 void PID::UpdateError(double cte) {
+    // How to calculate a time difference in C++: 
+    // https://stackoverflow.com/questions/728068/how-to-calculate-a-time-difference-in-c
     cur_time = std::clock();
     double dt = 1.0*(cur_time - pre_time)/CLOCKS_PER_SEC;
-    std::cout << "dt= " << dt << " : " << cur_time << "-" << pre_time << std::endl;
 
     if (fabs(dt) < 0.000001){
         d_error = 0.0;
