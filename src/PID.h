@@ -1,5 +1,8 @@
 #ifndef PID_H
 #define PID_H
+#include <ctime>
+#include <cmath>
+#include <iostream>
 
 class PID {
 public:
@@ -16,7 +19,9 @@ public:
   double Kp;
   double Ki;
   double Kd;
-
+  
+  std::clock_t cur_time;
+  std::clock_t pre_time;
   /*
   * Constructor
   */
