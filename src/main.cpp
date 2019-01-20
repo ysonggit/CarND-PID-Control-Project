@@ -3,6 +3,10 @@
 #include "json.hpp"
 #include "PID.h"
 #include <math.h>
+#include<fstream>
+#include <iomanip>
+#include <ctime>
+#include <sstream>
 
 // for convenience
 using json = nlohmann::json;
@@ -28,14 +32,24 @@ std::string hasData(std::string s) {
   return "";
 }
 
+// code from https://stackoverflow.com/questions/16357999/current-date-and-time-as-string
+std::string getTimestamp(){
+  auto t = std::time(nullptr);
+  auto tm = *std::localtime(&t);
+  std::ostringstream oss;
+  oss << std::put_time(&tm, "%d-%m-%Y-%H-%M-%S");
+  return oss.str();
+}
+
 int main()
 {
   uWS::Hub h;
-
+  std::ofstream outfile;
+  outfile.open("car_param.log."+getTimestamp(), std::ios::out);
   PID pid;
   // TODO: Initialize the pid variable.
   pid.Init(0.325, 0.002, 0.015);
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid, &outfile](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -58,13 +72,36 @@ int main()
           */
           pid.UpdateError(cte);
           double steer_value = pid.TotalError();
-
+          if(steer_value < -1.0) {
+            steer_value = -0.8;
+            speed = speed > 20 ? speed * 0.7 : speed; //speed down for anti-drifting
+          }
+          else if(steer_value > 1.0) {
+            steer_value = 0.8;
+            speed = speed > 20 ? speed * 0.7 : speed; //speed down for anti-drifting
+          }
+          if(fabs(cte) > 1.0) {
+            pid.Kp = 0.25;
+            pid.Kd = 0.02;
+          }else{
+            pid.Kp = 0.325;
+            pid.Kd = 0.015;
+          }
+          double throttle_value = 0.3;
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << " Speed: " << speed << std::endl;
+          outfile << cte << "," << steer_value << "," << speed << std::endl;
+          if(fabs(steer_value)<0.05){
+          	throttle_value *=1.2;
+          }
+          else{
+            throttle_value *=0.8; 
+          }
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["speed"] = speed;
+          msgJson["throttle"] = throttle_value;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
@@ -75,8 +112,9 @@ int main()
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
     }
-  });
 
+  });
+  
   // We don't need this since we're not using HTTP but if it's removed the program
   // doesn't compile :-(
   h.onHttpRequest([](uWS::HttpResponse *res, uWS::HttpRequest req, char *data, size_t, size_t) {
@@ -99,6 +137,7 @@ int main()
   h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, char *message, size_t length) {
     ws.close();
     std::cout << "Disconnected" << std::endl;
+
   });
 
   int port = 4567;
@@ -112,4 +151,5 @@ int main()
     return -1;
   }
   h.run();
+  outfile.close();
 }
