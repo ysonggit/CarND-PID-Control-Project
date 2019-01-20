@@ -74,35 +74,32 @@ int main()
           pid.UpdateError(cte);
           double steer_value = pid.TotalError();
          
-          if(steer_value < -0.7) {
-            steer_value = -0.7;
-            speed = speed > 25 ? speed * 0.75 : speed; //speed down for anti-drifting
+          if(steer_value < -0.8) {
+            steer_value = -0.8;
+            speed = speed > 25 ? speed * 0.9 : speed; //speed down for anti-drifting
           }
-          else if(steer_value > 0.7) {
-            steer_value = 0.7;
-            speed = speed > 25 ? speed * 0.75: speed; //speed down for anti-drifting
-          }
-          if(fabs(cte) > 0.75) {
-            speed *= 0.75;
+          else if(steer_value > 0.8) {
+            steer_value = 0.8;
+            speed = speed > 25 ? speed * 0.9: speed; //speed down for anti-drifting
           }
          
           // DEBUG
           std::cout << std::setprecision(4);
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << " Speed: " << speed << std::endl;
+          std::cout << "CTE: " << cte << " Steering: " << steer_value << " Speed: " << speed << std::endl;
           outfile << cte << "," << steer_value << "," << speed << std::endl;
           double throttle = 0.3;
           if(fabs(steer_value)<0.05){
-            throttle *=1.25;
+            throttle *=1.5;
           }
           else{
-            throttle *=0.75; 
+            throttle *=0.5; 
           }
           json msgJson;
           msgJson["steering_angle"] = steer_value;
           msgJson["speed"] = speed;
           msgJson["throttle"] = throttle;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
