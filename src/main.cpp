@@ -72,20 +72,16 @@ int main()
           */
           pid.UpdateError(cte);
           double steer_value = pid.TotalError();
-          if(steer_value < -1.0) {
-            steer_value = -0.8;
+          if(steer_value < -0.7) {
+            steer_value = -0.7;
             speed = speed > 20 ? speed * 0.7 : speed; //speed down for anti-drifting
           }
-          else if(steer_value > 1.0) {
-            steer_value = 0.8;
+          else if(steer_value > 0.7) {
+            steer_value = 0.7;
             speed = speed > 20 ? speed * 0.7 : speed; //speed down for anti-drifting
           }
-          if(fabs(cte) > 1.0) {
-            pid.Kp = 0.25;
-            pid.Kd = 0.02;
-          }else{
-            pid.Kp = 0.325;
-            pid.Kd = 0.015;
+          if(fabs(cte) > 0.7) {
+            speed *= 0.7;
           }
           double throttle_value = 0.3;
           // DEBUG
